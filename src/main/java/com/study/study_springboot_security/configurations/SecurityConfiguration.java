@@ -4,23 +4,34 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @Configuration
 public class SecurityConfiguration {
-  // @Bean
+  @Bean
   public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
+    // not using csrf protection
+    httpSecurity.csrf().disable();
     // 권한에 대한 부분: url & roles : user url & roles
     httpSecurity.authorizeRequests()
-        // .antMatchers("/").access("hasRole('ROLE_USER') or hasRole('ROLE_ADMIN')")
-        .antMatchers("/").authenticated() // 로그인 여부만 판단.
-        .antMatchers("/admin").access("hasRole('ROLE_ADMIN')")
+        // .antMatchers("/").authenticated() // 로그인 여부만 판단.
+        // .antMatchers("/admin").access("hasRole('ROLE_ADMIN')")
+        .antMatchers("/admin").authenticated() // admin은 로그인을 하게 한다.
+        .antMatchers("/manager/*").access("hasRole('ROLE_ADMIN') or hasRole('ROLE_MANAGER')")
+        .antMatchers("/admin/*").access("hasRole('ROLE_ADMIN')")
         .anyRequest().permitAll(); // 설정한 URL 이외는 접근 가능.
 
     // 로그인에 대한 부분
     httpSecurity.formLogin().loginPage("/loginForm")
+        .failureUrl("/loginForm?fail=true")
         .loginProcessingUrl("/login")
         .defaultSuccessUrl("/");
 
     return httpSecurity.build();
+  }
+
+  @Bean
+  public BCryptPasswordEncoder encoderPasswordEncoder() {
+    return new BCryptPasswordEncoder();
   }
 }
